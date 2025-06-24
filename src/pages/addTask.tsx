@@ -1,12 +1,14 @@
 import back from "../assets/back.svg";
+import { useNavigate } from "react-router-dom";
 const AddTask = () => {
+    const navigate = useNavigate();
     return (
         <>
             <div>
                 {/* Head section */}
                 <section className="relative flex items-center justify-center shadow-md shadow-gray-500 mb-5 px-4 py-1">
                     <div className="absolute left-4">
-                        <button className="rounded-xl hover:border-[1px] hover:border-[#646cff]">
+                        <button onClick={() => navigate(-1)} className="rounded-xl hover:border-[1px] hover:border-[#646cff]">
                             <img src={back} alt="Back" />
                         </button>
                     </div>
