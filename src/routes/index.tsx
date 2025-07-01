@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom"
 import AddTask from "../pages/addTask"
 import { addTaskRoute, cardDetailViewRoute } from "./routes"
-import Home from "../pages/home"
+import Home from "../pages/Home"
 import CardDetailView from "../dialogs/cardDetailView"
 
 const Index = () => {

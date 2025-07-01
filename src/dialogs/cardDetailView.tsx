@@ -1,14 +1,16 @@
 const CardDetailView = () => {
     return (
-        <>
-            <section>
-                <div className="flex flex-col backdrop-opacity-90 border-[1px] p-[10px] bg-[#242424] hover:shadow-2xs shadow-white rounded-3xl h-[200px] w-[200px] hover:border-[#646cff] text-white">
-                    <div>
-                        <p>This is my Card Detail View</p>
+        <div>
+            <div className="backdrop-blur-2xl border-[1px] hover:shadow-2xs shadow-white rounded-3xl border-[#646cff] text-white absolute md:p-10 size-fit  md:w-1/2 md:aspect-square lg:w-1/3 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2  bg-[#242424] ">
+                <section className="">
+                    <div className="">
+                        <div>
+                            <p>This is my Card Detail View</p>
+                        </div>
                     </div>
-                </div>
-            </section>
-        </>
+                </section>
+            </div>
+        </div>
     )
 }
 
