@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import backIcon from "../assets/backwhite.png";
-import lightIcon from "../assets/lightmodeicon.png";
-import darkIcon from "../assets/whitedark.png";
+
 import { addTask } from "../firebaseService";
 import type { Task, Priority } from "../type/task";
 
@@ -11,7 +9,6 @@ const categories = ["Work", "Personal", "Errand", "Other"];
 
 export default function AddTask() {
     const navigate = useNavigate();
-    const [dark, setDark] = useState(true);
     const [form, setForm] = useState<Omit<Task, 'id'>>({
         title: "",
         description: "",
@@ -20,25 +17,26 @@ export default function AddTask() {
         category: "Work",
         isCompleted: false,
     });
+    const [isDark, setIsDark] = useState(false);
 
     useEffect(() => {
         const btn = document.getElementById("back-btn");
         btn?.classList.add("animate-bounce");
         setTimeout(() => btn?.classList.remove("animate-bounce"), 2000);
+
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark') {
+            setIsDark(true);
+        }
     }, []);
 
     const onChange = (
-        e: React.ChangeEvent<
-            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-        >
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
         const { name, value } = e.target;
         setForm(f => ({
             ...f,
-            // Type assertion for priority ensures correct type
-            [name]: name === 'priority'
-                ? (value as Priority)
-                : value,
+            [name]: name === 'priority' ? (value as Priority) : value,
         } as Omit<Task, 'id'>));
     };
 
@@ -58,35 +56,10 @@ export default function AddTask() {
     };
 
     return (
-        <div className={`${dark ? "dark" : "light"}`} data-theme={dark ? "dark" : "light"}>
-            <nav className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex items-center space-x-4 rounded-xl bg-gray-800/50 p-3 shadow-lg backdrop-blur-md md:top-4 md:bottom-auto">
-                <button
-                    id="back-btn"
-                    onClick={() => navigate(-1)}
-                    className="rounded-full bg-white/10 p-2 hover:bg-white/20 transition"
-                >
-                    <img src={backIcon} alt="Back" className="h-5 w-5" />
-                </button>
-                {['Home', 'My Tasks', 'Completed', 'Logout'].map((l, i) => (
-                    <button
-                        key={i}
-                        onClick={() => navigate(l === 'Home' ? '/' : `/${l.toLowerCase().replace(' ', '')}`)}
-                        className="rounded-lg px-3 py-1 text-sm hover:bg-white/10 transition"
-                    >
-                        {l}
-                    </button>
-                ))}
-                <button
-                    onClick={() => setDark(d => !d)}
-                    className="rounded-full bg-white/10 p-2 hover:bg-white/20 transition"
-                >
-                    <img src={dark ? lightIcon : darkIcon} alt="Toggle theme" className="h-5 w-5" />
-                </button>
-            </nav>
-
-            <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 md:px-12 lg:px-24">
+        <div className={`${isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} min-h-screen p-6 md:px-12 lg:px-24`}>
+            <main>
                 <div className="grid lg:grid-cols-2 gap-8">
-                    <div className="space-y-4 rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
+                    <div className={`space-y-4 rounded-xl p-6 shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                         <h2 className="text-2xl font-semibold">Add New Task</h2>
 
                         <div>
@@ -97,7 +70,7 @@ export default function AddTask() {
                                 onChange={onChange}
                                 type="text"
                                 placeholder="Your task title"
-                                className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                                className={`w-full rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} focus:border-blue-500 focus:ring-blue-500`}
                             />
                         </div>
 
@@ -109,7 +82,7 @@ export default function AddTask() {
                                 onChange={onChange}
                                 rows={4}
                                 placeholder="Describe your task in detail"
-                                className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                                className={`w-full rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} focus:border-blue-500 focus:ring-blue-500`}
                             />
                         </div>
 
@@ -121,7 +94,7 @@ export default function AddTask() {
                                     value={form.dueDate}
                                     onChange={onChange}
                                     type="date"
-                                    className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                                    className={`w-full rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} focus:border-blue-500 focus:ring-blue-500`}
                                 />
                             </div>
                             <div>
@@ -130,7 +103,7 @@ export default function AddTask() {
                                     name="priority"
                                     value={form.priority}
                                     onChange={onChange}
-                                    className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                                    className={`w-full rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} focus:border-blue-500 focus:ring-blue-500`}
                                 >
                                     {priorities.map((p) => (
                                         <option key={p} value={p}>
@@ -147,7 +120,7 @@ export default function AddTask() {
                                 name="category"
                                 value={form.category}
                                 onChange={onChange}
-                                className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
+                                className={`w-full rounded-lg border ${isDark ? 'border-gray-700 bg-gray-900 text-gray-100' : 'border-gray-300 bg-white text-gray-900'} focus:border-blue-500 focus:ring-blue-500`}
                             >
                                 {categories.map((c) => (
                                     <option key={c} value={c}>

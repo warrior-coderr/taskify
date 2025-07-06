@@ -1,7 +1,5 @@
 import addtaskwhite from "../assets/addnotewhite.png"
 
-
-
 interface FloatingAddButtonProps {
     onClick: () => void;
 }

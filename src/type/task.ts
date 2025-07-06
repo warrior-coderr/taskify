@@ -4,8 +4,9 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  dueDate: string;    // e.g. "2025-06-30"
+  dueDate: string;   
   priority: Priority;
   isCompleted: boolean;
   category?: string;
 }
+export type Filter = 'Home' | 'Today' | 'Upcoming' | 'Completed';

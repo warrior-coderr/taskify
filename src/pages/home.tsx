@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import TaskCard from '../components/TaskCard';
-import darkmode from '../assets/whitedark.png';
-import lightmode from '../assets/lightmodeicon.png';
 import FilterChips from '../components/FilterChips';
 import FloatingAddButton from '../components/FloatingAddButton';
 import AddEditTaskModal from '../components/AddEditTaskModal';
@@ -9,28 +7,31 @@ import type { Task } from '../type/task';
 import { getTasks, addTask, updateTask, deleteTask } from '../firebaseService';
 
 export default function Home() {
-    const [dark, setDark] = useState(true);
-    const [filter, setFilter] = useState<'All' | 'Today' | 'Upcoming' | 'Completed'>('All');
+    const [filter, setFilter] = useState<'Home' | 'Today' | 'Upcoming' | 'Completed'>('Home');
     const [search, setSearch] = useState('');
     const [tasks, setTasks] = useState<Task[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editTask, setEditTask] = useState<Task | undefined>();
     const [loading, setLoading] = useState(true);
+    const [isDark, setIsDark] = useState(false);
 
-    // Animate add button
     useEffect(() => {
-        const btn = document.getElementById('add-btn');
-        btn?.classList.add('animate-bounce');
-        setTimeout(() => btn?.classList.remove('animate-bounce'), 12000);
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark') {
+            setIsDark(true);
+        }
     }, []);
 
-    // Toggle dark mode on <html>
-    useEffect(() => {
-        const root = document.documentElement;
-        dark ? root.classList.add('dark') : root.classList.remove('dark');
-    }, [dark]);
+    const toggleTheme = () => {
+        if (isDark) {
+            localStorage.setItem('theme', 'light');
+            setIsDark(false);
+        } else {
+            localStorage.setItem('theme', 'dark');
+            setIsDark(true);
+        }
+    };
 
-    // Load tasks from Firestore
     useEffect(() => {
         (async () => {
             setLoading(true);
@@ -38,14 +39,13 @@ export default function Home() {
                 const data = await getTasks();
                 setTasks(data);
             } catch (err) {
-                console.error("Error loading tasks:", err);
+                console.error('Error loading tasks:', err);
             } finally {
                 setLoading(false);
             }
         })();
     }, []);
 
-    // Save handler: add or update
     const handleSave = async (taskData: Omit<Task, 'id'>) => {
         try {
             if (editTask) {
@@ -56,7 +56,7 @@ export default function Home() {
                 setTasks(ts => [added, ...ts]);
             }
         } catch (err) {
-            console.error("Error saving task:", err);
+            console.error('Error saving task:', err);
         } finally {
             setModalOpen(false);
             setEditTask(undefined);
@@ -65,10 +65,7 @@ export default function Home() {
 
     const handleEdit = (id: string) => {
         const t = tasks.find(t => t.id === id);
-        if (t) {
-            setEditTask(t);
-            setModalOpen(true);
-        }
+        if (t) setEditTask(t), setModalOpen(true);
     };
 
     const handleDelete = async (id: string) => {
@@ -76,7 +73,7 @@ export default function Home() {
             await deleteTask(id);
             setTasks(ts => ts.filter(t => t.id !== id));
         } catch (err) {
-            console.error("Error deleting task:", err);
+            console.error('Error deleting task:', err);
         }
     };
 
@@ -87,7 +84,7 @@ export default function Home() {
             await updateTask(id, { isCompleted: !t.isCompleted });
             setTasks(ts => ts.map(task => task.id === id ? { ...task, isCompleted: !task.isCompleted } : task));
         } catch (err) {
-            console.error("Error toggling task:", err);
+            console.error('Error toggling task:', err);
         }
     };
 
@@ -101,24 +98,19 @@ export default function Home() {
         .filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <div className={`min-h-screen bg-gradient-to-br ${dark ? 'from-blue-50 to-white text-gray-900' : 'from-gray-900 to-black text-gray-100'} transition-colors duration-1000`}>
-            <header className={`flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 px-6 sm:p-6 shadow-lg ${dark ? 'bg-white/60' : 'bg-gray-800/60'} backdrop-blur rounded-b-xl`}>
-                <h1 className="text-3xl font-extrabold tracking-wide bg-gradient-to-t from-blue-500 to-purple-600 bg-clip-text text-transparent">Taskify</h1>
+        <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}>
+            <header className={`flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 px-6 sm:p-6 shadow-lg rounded-b-xl ${isDark ? 'bg-gray-800/60' : 'bg-white/60'} backdrop-blur`}>
+                <h1 className="text-3xl font-extrabold tracking-wide bg-gradient-to-t from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                    Taskify
+                </h1>
                 <div className="flex flex-wrap sm:flex-nowrap items-center space-x-4">
                     <input
                         type="search"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search tasks…"
-                        className={`px-4 py-2 border rounded w-full sm:w-64 focus:ring-2 ${dark ? 'focus:ring-blue-400' : 'focus:ring-purple-600'} transition`}
+                        className={`px-4 py-2 border rounded w-full sm:w-64 focus:ring-2 transition ${isDark ? 'bg-gray-800 border-gray-700 focus:ring-purple-600' : 'bg-white border-gray-300 focus:ring-blue-400'}`}
                     />
-                    <FilterChips active={filter} onSelect={setFilter} />
-                    <button
-                        onClick={() => setDark(d => !d)}
-                        className={`px-3 py-1 rounded-xl shadow hover:shadow-lg transition bg-gradient-to-t ${dark ? 'from-blue-400 to-purple-500' : 'from-purple-700 to-indigo-800'} text-white`}
-                    >
-                        <img src={dark ? darkmode : lightmode} alt="Toggle theme" className="h-5 w-5" />
-                    </button>
                 </div>
             </header>
 
@@ -130,13 +122,14 @@ export default function Home() {
                         <TaskCard
                             key={t.id}
                             task={t}
+                            isDark={isDark}
                             onEdit={() => handleEdit(t.id)}
                             onToggle={() => handleToggle(t.id)}
                             onDelete={() => handleDelete(t.id)}
                         />
                     ))
                 ) : (
-                    <p className={`col-span-full text-center py-8 ${dark ? 'text-gray-500' : 'text-gray-400'} animate-fade-in`}>
+                    <p className={`col-span-full text-center py-8 animate-fade-in ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         No tasks to show.
                     </p>
                 )}
@@ -144,11 +137,20 @@ export default function Home() {
 
             <FloatingAddButton onClick={() => setModalOpen(true)} />
 
+
+            <FilterChips
+                active={filter}
+                onSelect={setFilter}
+                isDark={isDark}
+                toggleTheme={toggleTheme}
+            />
+
             <AddEditTaskModal
                 isOpen={modalOpen}
                 onClose={() => { setModalOpen(false); setEditTask(undefined); }}
                 onSave={handleSave}
                 initial={editTask}
+                isDark={isDark}
             />
         </div>
     );

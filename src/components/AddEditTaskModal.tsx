@@ -5,16 +5,17 @@ interface AddEditTaskModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSave: (data: Omit<Task, 'id'>) => Promise<void>;
-    initial?: Task; // if present → edit mode, else → add mode
+    initial?: Task;
+    isDark: boolean;
 }
 
 export default function AddEditTaskModal({
     isOpen,
     onClose,
     onSave,
-    initial
+    initial,
+    isDark
 }: AddEditTaskModalProps) {
-    const [dark] = useState(false);
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -67,9 +68,13 @@ export default function AddEditTaskModal({
 
     if (!isOpen) return null;
 
+    const containerBg = isDark ? 'bg-gray-800 text-gray-100' : 'bg-white text-gray-900';
+    const inputBg = isDark ? 'bg-gray-900 text-gray-100 border-gray-600' : 'bg-white text-gray-900 border-gray-300';
+    const cancelBg = isDark ? 'bg-gray-700 text-gray-100' : 'bg-gray-200 text-gray-900';
+
     return (
-        <div className="fixed inset-0 backdrop-blur-sm bg-black/10 bg-opacity-30 flex items-center justify-center z-50">
-            <div className={`${dark ? "bg-white text-gray-900" : "bg-gray-800 text-gray-100"} p-6 rounded-xl w-full max-w-md mx-4`}>
+        <div className="fixed inset-0 backdrop-blur-sm bg-black/10 flex items-center justify-center z-50">
+            <div className={`px-6 py-8 rounded-xl w-full max-w-md mx-4 ${containerBg}`}>
                 <h2 className="text-xl font-semibold mb-4">
                     {initial ? 'Edit Task' : 'Add New Task'}
                 </h2>
@@ -80,7 +85,7 @@ export default function AddEditTaskModal({
                         type="text"
                         value={title}
                         onChange={e => setTitle(e.target.value)}
-                        className="w-full mt-1 p-2 border rounded"
+                        className={`w-full mt-1 p-2 rounded border ${inputBg}`}
                         disabled={saving}
                     />
                 </label>
@@ -89,7 +94,7 @@ export default function AddEditTaskModal({
                     <textarea
                         value={description}
                         onChange={e => setDescription(e.target.value)}
-                        className="w-full mt-1 p-2 border rounded"
+                        className={`w-full mt-1 p-2 rounded border ${inputBg}`}
                         rows={3}
                         disabled={saving}
                     />
@@ -100,7 +105,7 @@ export default function AddEditTaskModal({
                         type="date"
                         value={dueDate}
                         onChange={e => setDueDate(e.target.value)}
-                        className="w-full mt-1 p-2 border rounded"
+                        className={`w-full mt-1 p-2 rounded border ${inputBg}`}
                         disabled={saving}
                     />
                 </label>
@@ -109,7 +114,7 @@ export default function AddEditTaskModal({
                     <select
                         value={priority}
                         onChange={e => setPriority(e.target.value as Task['priority'])}
-                        className="w-full mt-1 p-2 border rounded"
+                        className={`w-full mt-1 p-2 rounded border ${inputBg}`}
                         disabled={saving}
                     >
                         <option>Low</option>
@@ -123,19 +128,23 @@ export default function AddEditTaskModal({
                         type="text"
                         value={category}
                         onChange={e => setCategory(e.target.value)}
-                        className="w-full mt-1 p-2 border rounded"
+                        className={`w-full mt-1 p-2 rounded border ${inputBg}`}
                         placeholder="e.g. Work"
                         disabled={saving}
                     />
                 </label>
 
                 <div className="flex justify-end space-x-2">
-                    <button onClick={onClose} className="px-4 py-2 rounded text-gray-900 bg-gray-200" disabled={saving}>
+                    <button
+                        onClick={onClose}
+                        className={`px-4 py-2 rounded ${cancelBg}`}
+                        disabled={saving}
+                    >
                         Cancel
                     </button>
                     <button
                         onClick={handleSave}
-                        className="px-4 py-2 rounded bg-blue-600 text-white flex items-center"
+                        className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                         disabled={saving}
                     >
                         {saving ? 'Saving...' : 'Save'}
