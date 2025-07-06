@@ -1,56 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import TaskCard from '../components/TaskCard';
+import darkmode from '../assets/whitedark.png';
+import lightmode from '../assets/lightmodeicon.png';
 import FilterChips from '../components/FilterChips';
 import FloatingAddButton from '../components/FloatingAddButton';
 import AddEditTaskModal from '../components/AddEditTaskModal';
 import type { Task } from '../type/task';
+import { getTasks, addTask, updateTask, deleteTask } from '../firebaseService';
 
 export default function Home() {
     const [dark, setDark] = useState(true);
     const [filter, setFilter] = useState<'All' | 'Today' | 'Upcoming' | 'Completed'>('All');
     const [search, setSearch] = useState('');
-    const [tasks, setTasks] = useState<Task[]>([
-        { id: 1, title: 'First Task', description: '…', dueDate: '2025-06-30', priority: 'High', isCompleted: false, category: 'Work' },
-        { id: 2, title: 'Second Task', description: '…', dueDate: '2025-07-01', priority: 'Medium', isCompleted: true, category: 'Personal' },
-        { id: 3, title: 'Third Task', description: '…', dueDate: '2025-07-02', priority: 'Low', isCompleted: false, category: 'Errand' }
-    ]);
+    const [tasks, setTasks] = useState<Task[]>([]);
     const [modalOpen, setModalOpen] = useState(false);
     const [editTask, setEditTask] = useState<Task | undefined>();
+    const [loading, setLoading] = useState(true);
 
+    // Animate add button
     useEffect(() => {
         const btn = document.getElementById('add-btn');
-        btn?.classList.add('animate-pulse');
-        setTimeout(() => btn?.classList.remove('animate-pulse'), 1200);
+        btn?.classList.add('animate-bounce');
+        setTimeout(() => btn?.classList.remove('animate-bounce'), 12000);
     }, []);
 
+    // Toggle dark mode on <html>
     useEffect(() => {
-        // Apply/remove dark class to <html> dynamically
         const root = document.documentElement;
-        if (dark) {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
+        dark ? root.classList.add('dark') : root.classList.remove('dark');
     }, [dark]);
 
-    const handleSave = (data: Omit<Task, 'id'>) => {
-        if (editTask) {
-            setTasks(ts => ts.map(t => t.id === editTask.id ? { ...t, ...data } : t));
-        } else {
-            setTasks(ts => [{ id: Date.now(), ...data }, ...ts]);
+    // Load tasks from Firestore
+    useEffect(() => {
+        (async () => {
+            setLoading(true);
+            try {
+                const data = await getTasks();
+                setTasks(data);
+            } catch (err) {
+                console.error("Error loading tasks:", err);
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
+
+    // Save handler: add or update
+    const handleSave = async (taskData: Omit<Task, 'id'>) => {
+        try {
+            if (editTask) {
+                await updateTask(editTask.id, taskData);
+                setTasks(ts => ts.map(t => t.id === editTask.id ? { ...t, ...taskData } : t));
+            } else {
+                const added = await addTask(taskData);
+                setTasks(ts => [added, ...ts]);
+            }
+        } catch (err) {
+            console.error("Error saving task:", err);
+        } finally {
+            setModalOpen(false);
+            setEditTask(undefined);
         }
-        setModalOpen(false);
-        setEditTask(undefined);
     };
 
-    const handleEdit = (id: number) => {
+    const handleEdit = (id: string) => {
         const t = tasks.find(t => t.id === id);
-        if (t) { setEditTask(t); setModalOpen(true); }
+        if (t) {
+            setEditTask(t);
+            setModalOpen(true);
+        }
     };
 
-    const handleDelete = (id: number) => setTasks(ts => ts.filter(t => t.id !== id));
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteTask(id);
+            setTasks(ts => ts.filter(t => t.id !== id));
+        } catch (err) {
+            console.error("Error deleting task:", err);
+        }
+    };
 
-    const handleToggle = (id: number) => setTasks(ts => ts.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t));
+    const handleToggle = async (id: string) => {
+        const t = tasks.find(t => t.id === id);
+        if (!t) return;
+        try {
+            await updateTask(id, { isCompleted: !t.isCompleted });
+            setTasks(ts => ts.map(task => task.id === id ? { ...task, isCompleted: !task.isCompleted } : task));
+        } catch (err) {
+            console.error("Error toggling task:", err);
+        }
+    };
 
     const visible = tasks
         .filter(t => {
@@ -62,40 +101,42 @@ export default function Home() {
         .filter(t => t.title.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-black text-gray-900 dark:text-gray-100 transition-colors duration-500">
-            <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-6 space-y-4 sm:space-y-0 shadow-lg bg-white/60 dark:bg-gray-800/60 backdrop-blur rounded-b-xl">
-                <h1 className="text-3xl font-extrabold tracking-wide bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">Taskify</h1>
+        <div className={`min-h-screen bg-gradient-to-br ${dark ? 'from-blue-50 to-white text-gray-900' : 'from-gray-900 to-black text-gray-100'} transition-colors duration-1000`}>
+            <header className={`flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 px-6 sm:p-6 shadow-lg ${dark ? 'bg-white/60' : 'bg-gray-800/60'} backdrop-blur rounded-b-xl`}>
+                <h1 className="text-3xl font-extrabold tracking-wide bg-gradient-to-t from-blue-500 to-purple-600 bg-clip-text text-transparent">Taskify</h1>
                 <div className="flex flex-wrap sm:flex-nowrap items-center space-x-4">
                     <input
                         type="search"
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search tasks…"
-                        className="px-4 py-2 border rounded w-full sm:w-64 focus:ring-2 focus:ring-blue-400 dark:focus:ring-purple-600 transition"
+                        className={`px-4 py-2 border rounded w-full sm:w-64 focus:ring-2 ${dark ? 'focus:ring-blue-400' : 'focus:ring-purple-600'} transition`}
                     />
                     <FilterChips active={filter} onSelect={setFilter} />
                     <button
                         onClick={() => setDark(d => !d)}
-                        className="px-3 py-1 rounded shadow hover:shadow-lg transition bg-gradient-to-r from-blue-400 to-purple-500 text-white dark:from-purple-700 dark:to-indigo-800"
+                        className={`px-3 py-1 rounded-xl shadow hover:shadow-lg transition bg-gradient-to-t ${dark ? 'from-blue-400 to-purple-500' : 'from-purple-700 to-indigo-800'} text-white`}
                     >
-                        {dark ? 'Light' : 'Dark'}
+                        <img src={dark ? darkmode : lightmode} alt="Toggle theme" className="h-5 w-5" />
                     </button>
                 </div>
             </header>
 
-            <main className="px-6 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {visible.map(t => (
-                    <TaskCard
-                        key={t.id}
-                        task={t}
-                        onClick={() => { }}
-                        onEdit={handleEdit}
-                        onToggle={handleToggle}
-                        onDelete={handleDelete}
-                    />
-                ))}
-                {!visible.length && (
-                    <p className="col-span-full text-center py-8 text-gray-500 dark:text-gray-400 animate-fade-in">
+            <main className="px-6 py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {loading ? (
+                    <p className="col-span-full text-center py-8">Loading tasks...</p>
+                ) : visible.length > 0 ? (
+                    visible.map(t => (
+                        <TaskCard
+                            key={t.id}
+                            task={t}
+                            onEdit={() => handleEdit(t.id)}
+                            onToggle={() => handleToggle(t.id)}
+                            onDelete={() => handleDelete(t.id)}
+                        />
+                    ))
+                ) : (
+                    <p className={`col-span-full text-center py-8 ${dark ? 'text-gray-500' : 'text-gray-400'} animate-fade-in`}>
                         No tasks to show.
                     </p>
                 )}

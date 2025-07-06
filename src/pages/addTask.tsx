@@ -3,43 +3,62 @@ import { useNavigate } from "react-router-dom";
 import backIcon from "../assets/backwhite.png";
 import lightIcon from "../assets/lightmodeicon.png";
 import darkIcon from "../assets/whitedark.png";
+import { addTask } from "../firebaseService";
+import type { Task, Priority } from "../type/task";
 
-
-const priorities = ["Low", "Medium", "High"];
+const priorities: Priority[] = ["Low", "Medium", "High"];
 const categories = ["Work", "Personal", "Errand", "Other"];
 
 export default function AddTask() {
     const navigate = useNavigate();
     const [dark, setDark] = useState(true);
-    const [form, setForm] = useState({
+    const [form, setForm] = useState<Omit<Task, 'id'>>({
         title: "",
-        desc: "",
-        due: "",
+        description: "",
+        dueDate: "",
         priority: "Medium",
         category: "Work",
+        isCompleted: false,
     });
 
-    // Pulse back button on mount
     useEffect(() => {
         const btn = document.getElementById("back-btn");
-        btn?.classList.add("animate-pulse");
-        setTimeout(() => btn?.classList.remove("animate-pulse"), 2000);
+        btn?.classList.add("animate-bounce");
+        setTimeout(() => btn?.classList.remove("animate-bounce"), 2000);
     }, []);
 
-    const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-        setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+    const onChange = (
+        e: React.ChangeEvent<
+            HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+        >
+    ) => {
+        const { name, value } = e.target;
+        setForm(f => ({
+            ...f,
+            // Type assertion for priority ensures correct type
+            [name]: name === 'priority'
+                ? (value as Priority)
+                : value,
+        } as Omit<Task, 'id'>));
+    };
 
-    const onSave = () => {
-        console.log("Saved", form);
-        // call your save API here...
+    const onSave = async () => {
+        if (!form.title.trim()) {
+            alert("Title is required!");
+            return;
+        }
+        try {
+            await addTask(form);
+            alert("Task added successfully!");
+            navigate("/");
+        } catch (err) {
+            console.error("Error adding task:", err);
+            alert("Something went wrong. Please try again.");
+        }
     };
 
     return (
-        <div
-            className={`${dark ? "dark" : ""}`}
-            data-theme={dark ? "dark" : "light"}
-        >
-            {/* Nav */}
+        <div className={`${dark ? "dark" : "light"}`} data-theme={dark ? "dark" : "light"}>
             <nav className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex items-center space-x-4 rounded-xl bg-gray-800/50 p-3 shadow-lg backdrop-blur-md md:top-4 md:bottom-auto">
                 <button
                     id="back-btn"
@@ -48,12 +67,10 @@ export default function AddTask() {
                 >
                     <img src={backIcon} alt="Back" className="h-5 w-5" />
                 </button>
-                {["Home", "My Tasks", "Completed", "Logout"].map((l, i) => (
+                {['Home', 'My Tasks', 'Completed', 'Logout'].map((l, i) => (
                     <button
                         key={i}
-                        onClick={() =>
-                            navigate(l === "Home" ? "/" : `/${l.toLowerCase().replace(" ", "")}`)
-                        }
+                        onClick={() => navigate(l === 'Home' ? '/' : `/${l.toLowerCase().replace(' ', '')}`)}
                         className="rounded-lg px-3 py-1 text-sm hover:bg-white/10 transition"
                     >
                         {l}
@@ -63,22 +80,15 @@ export default function AddTask() {
                     onClick={() => setDark(d => !d)}
                     className="rounded-full bg-white/10 p-2 hover:bg-white/20 transition"
                 >
-                    <img
-                        src={dark ? lightIcon : darkIcon}
-                        alt="Toggle theme"
-                        className="h-5 w-5"
-                    />
+                    <img src={dark ? lightIcon : darkIcon} alt="Toggle theme" className="h-5 w-5" />
                 </button>
             </nav>
 
-            {/* Body */}
             <main className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-6 md:px-12 lg:px-24">
                 <div className="grid lg:grid-cols-2 gap-8">
-                    {/* ==== FORM CARD ==== */}
                     <div className="space-y-4 rounded-xl bg-white dark:bg-gray-800 p-6 shadow-xl">
                         <h2 className="text-2xl font-semibold">Add New Task</h2>
 
-                        {/* Title */}
                         <div>
                             <label className="block mb-1 font-medium">Title</label>
                             <input
@@ -91,12 +101,11 @@ export default function AddTask() {
                             />
                         </div>
 
-                        {/* Description */}
                         <div>
                             <label className="block mb-1 font-medium">Description</label>
                             <textarea
-                                name="desc"
-                                value={form.desc}
+                                name="description"
+                                value={form.description}
                                 onChange={onChange}
                                 rows={4}
                                 placeholder="Describe your task in detail"
@@ -104,13 +113,12 @@ export default function AddTask() {
                             />
                         </div>
 
-                        {/* Due Date + Priority */}
                         <div className="grid sm:grid-cols-2 gap-4">
                             <div>
                                 <label className="block mb-1 font-medium">Due Date</label>
                                 <input
-                                    name="due"
-                                    value={form.due}
+                                    name="dueDate"
+                                    value={form.dueDate}
                                     onChange={onChange}
                                     type="date"
                                     className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
@@ -124,7 +132,7 @@ export default function AddTask() {
                                     onChange={onChange}
                                     className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
                                 >
-                                    {priorities.map(p => (
+                                    {priorities.map((p) => (
                                         <option key={p} value={p}>
                                             {p}
                                         </option>
@@ -133,7 +141,6 @@ export default function AddTask() {
                             </div>
                         </div>
 
-                        {/* Category */}
                         <div>
                             <label className="block mb-1 font-medium">Category</label>
                             <select
@@ -142,7 +149,7 @@ export default function AddTask() {
                                 onChange={onChange}
                                 className="w-full rounded-lg border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:border-blue-500 focus:ring-blue-500"
                             >
-                                {categories.map(c => (
+                                {categories.map((c) => (
                                     <option key={c} value={c}>
                                         {c}
                                     </option>
@@ -150,7 +157,6 @@ export default function AddTask() {
                             </select>
                         </div>
 
-                        {/* Save Button */}
                         <button
                             onClick={onSave}
                             className="w-full rounded-lg bg-blue-600 py-2 text-white hover:bg-blue-700 transition"

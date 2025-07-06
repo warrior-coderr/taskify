@@ -1,7 +1,7 @@
 export type Priority = 'Low' | 'Medium' | 'High';
 
 export interface Task {
-  id: number;
+  id: string;
   title: string;
   description?: string;
   dueDate: string;    // e.g. "2025-06-30"

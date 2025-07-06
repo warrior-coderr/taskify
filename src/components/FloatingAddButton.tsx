@@ -1,4 +1,6 @@
-import React from 'react';
+import addtaskwhite from "../assets/addnotewhite.png"
+
+
 
 interface FloatingAddButtonProps {
     onClick: () => void;
@@ -13,7 +15,8 @@ export default function FloatingAddButton({ onClick }: FloatingAddButtonProps) {
                  hover:scale-105 transform transition"
         >
             {/* TODO: /assets/plus.svg */}
-            <img src="/assets/plus.svg" alt="Add" className="h-6 w-6" />
+            <img src={addtaskwhite} alt="Add" className="h-6 w-6" />
+            {/* {`${dark ? addtaskblack : addtaskwhite}`} */}
         </button>
     );
 }
