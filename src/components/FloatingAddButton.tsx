@@ -1,4 +1,4 @@
-import addtaskwhite from "../assets/addnotewhite.png"
+import addtaskwhite from "../assets/addnotewhite.png";
 
 interface FloatingAddButtonProps {
     onClick: () => void;
@@ -7,14 +7,10 @@ interface FloatingAddButtonProps {
 export default function FloatingAddButton({ onClick }: FloatingAddButtonProps) {
     return (
         <button
-            id="add-btn"
+            className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50 w-14 h-14 bg-blue-600 rounded-full shadow-md hover:bg-blue-700 transition flex items-center justify-center"
             onClick={onClick}
-            className="fixed bottom-6 right-6 bg-blue-600 p-4 rounded-full text-white shadow-lg
-                 hover:scale-105 transform transition"
         >
-            {/* TODO: /assets/plus.svg */}
-            <img src={addtaskwhite} alt="Add" className="h-6 w-6" />
-            {/* {`${dark ? addtaskblack : addtaskwhite}`} */}
+            <img src={addtaskwhite} alt="Add" className="h-7 w-7 object-contain" />
         </button>
     );
 }

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { auth } from "../firebaseService";
+
 
 import { addTask } from "../firebaseService";
 import type { Task, Priority } from "../type/task";
@@ -39,14 +41,20 @@ export default function AddTask() {
             [name]: name === 'priority' ? (value as Priority) : value,
         } as Omit<Task, 'id'>));
     };
-
     const onSave = async () => {
         if (!form.title.trim()) {
             alert("Title is required!");
             return;
         }
+
+        const user = auth.currentUser;
+        if (!user) {
+            alert("You must be logged in to save a task.");
+            return;
+        }
+
         try {
-            await addTask(form);
+            await addTask(form, user.uid);
             alert("Task added successfully!");
             navigate("/");
         } catch (err) {
@@ -54,6 +62,7 @@ export default function AddTask() {
             alert("Something went wrong. Please try again.");
         }
     };
+
 
     return (
         <div className={`${isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900'} min-h-screen p-6 md:px-12 lg:px-24`}>

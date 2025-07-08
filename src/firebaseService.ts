@@ -14,29 +14,29 @@ const tasksCollection = collection(db, 'tasks');
 /**
  * Fetch all tasks from Firestore and map to Task[]
  */
-export async function getTasks(): Promise<Task[]> {
-  const snapshot = await getDocs(tasksCollection);
+import { query, where } from 'firebase/firestore';
+
+export async function getTasks(userId: string): Promise<Task[]> {
+  const q = query(tasksCollection, where("userId", "==", userId));
+  const snapshot = await getDocs(q);
   return snapshot.docs.map(d => {
     const data = d.data() as Omit<Task, 'id'>;
     return {
       id: d.id,
-      title: data.title,
-      description: data.description,
-      dueDate: data.dueDate,
-      priority: data.priority,
-      isCompleted: data.isCompleted,
-      category: data.category
+      ...data
     };
   });
 }
 
+
 /**
  * Add a new task and return the created Task (with Firestore ID)
  */
-export async function addTask(task: Omit<Task, 'id'>): Promise<Task> {
-  const docRef = await addDoc(tasksCollection, task);
+export async function addTask(task: Omit<Task, 'id'>, userId: string): Promise<Task> {
+  const docRef = await addDoc(tasksCollection, { ...task, userId });
   return { id: docRef.id, ...task };
 }
+
 
 /**
  * Update an existing task by ID
@@ -52,4 +52,23 @@ export async function updateTask(id: string, updates: Partial<Omit<Task, 'id'>>)
 export async function deleteTask(id: string): Promise<void> {
   const taskDoc = doc(db, 'tasks', id);
   await deleteDoc(taskDoc);
+}
+
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "firebase/auth";
+export const auth = getAuth();
+
+export async function login(email: string, password: string) {
+  return await signInWithEmailAndPassword(auth, email, password);
+}
+
+export async function signup(email: string, password: string) {
+  return await createUserWithEmailAndPassword(auth, email, password);
+}
+
+export async function logout() {
+  return await signOut(auth);
+}
+
+export function onUserChange(callback: (user: any) => void) {
+  return onAuthStateChanged(auth, callback);
 }

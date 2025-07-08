@@ -4,7 +4,8 @@ import FilterChips from '../components/FilterChips';
 import FloatingAddButton from '../components/FloatingAddButton';
 import AddEditTaskModal from '../components/AddEditTaskModal';
 import type { Task } from '../type/task';
-import { getTasks, addTask, updateTask, deleteTask } from '../firebaseService';
+import { auth } from '../firebaseService';
+import { getTasks, addTask, updateTask, deleteTask, logout } from '../firebaseService';
 
 export default function Home() {
     const [filter, setFilter] = useState<'Home' | 'Today' | 'Upcoming' | 'Completed'>('Home');
@@ -14,6 +15,7 @@ export default function Home() {
     const [editTask, setEditTask] = useState<Task | undefined>();
     const [loading, setLoading] = useState(true);
     const [isDark, setIsDark] = useState(false);
+
 
     useEffect(() => {
         const theme = localStorage.getItem('theme');
@@ -31,37 +33,53 @@ export default function Home() {
             setIsDark(true);
         }
     };
-
     useEffect(() => {
-        (async () => {
+        const unsub = auth.onAuthStateChanged(async (currentUser) => {
+            if (!currentUser) return;
+
             setLoading(true);
             try {
-                const data = await getTasks();
+                const data = await getTasks(currentUser.uid);
                 setTasks(data);
             } catch (err) {
                 console.error('Error loading tasks:', err);
             } finally {
                 setLoading(false);
             }
-        })();
+        });
+
+        return () => unsub();
     }, []);
+
+
 
     const handleSave = async (taskData: Omit<Task, 'id'>) => {
         try {
+            const user = auth.currentUser;
+            if (!user) {
+                alert("You must be logged in to save tasks.");
+                return;
+            }
+
             if (editTask) {
                 await updateTask(editTask.id, taskData);
-                setTasks(ts => ts.map(t => t.id === editTask.id ? { ...t, ...taskData } : t));
+                setTasks(ts =>
+                    ts.map(t => t.id === editTask.id ? { ...t, ...taskData } : t)
+                );
             } else {
-                const added = await addTask(taskData);
+                const added = await addTask(taskData, user.uid);  // ✅ fixed this line
                 setTasks(ts => [added, ...ts]);
             }
         } catch (err) {
             console.error('Error saving task:', err);
+            alert("Something went wrong while saving the task.");
         } finally {
             setModalOpen(false);
             setEditTask(undefined);
         }
     };
+
+
 
     const handleEdit = (id: string) => {
         const t = tasks.find(t => t.id === id);
@@ -99,20 +117,40 @@ export default function Home() {
 
     return (
         <div className={`min-h-screen transition-colors duration-500 ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}>
-            <header className={`flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 px-6 sm:p-6 shadow-lg rounded-b-xl ${isDark ? 'bg-gray-800/60' : 'bg-white/60'} backdrop-blur`}>
+            <header
+                className={`flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 px-6 sm:p-6 shadow-lg rounded-b-xl ${isDark ? 'bg-gray-800/60' : 'bg-white/60'} backdrop-blur`}
+            >
                 <h1 className="text-3xl font-extrabold tracking-wide bg-gradient-to-t from-blue-500 to-purple-600 bg-clip-text text-transparent">
                     Taskify
                 </h1>
-                <div className="flex flex-wrap sm:flex-nowrap items-center space-x-4">
+
+                <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mt-4 sm:mt-0">
                     <input
                         type="search"
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
+                        onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search tasks…"
                         className={`px-4 py-2 border rounded w-full sm:w-64 focus:ring-2 transition ${isDark ? 'bg-gray-800 border-gray-700 focus:ring-purple-600' : 'bg-white border-gray-300 focus:ring-blue-400'}`}
                     />
+
+                    <button
+                        onClick={async () => {
+                            await logout();
+                            window.location.reload();
+                        }}
+                        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    >
+                        Logout
+                    </button>
+
+                    {auth.currentUser?.email && (
+                        <p className="text-sm text-gray-500 dark:text-gray-300">
+                            {auth.currentUser.email}
+                        </p>
+                    )}
                 </div>
             </header>
+
 
             <main className="px-6 py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {loading ? (
